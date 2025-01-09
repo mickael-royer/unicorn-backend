@@ -1,5 +1,5 @@
 # unicorn-backend
-BFF based on [Dapr](https://dapr.io/) for Unicorn App (cf. [ADR 0017-distributed-application](https://hugo.royerm.fr/adr/0017-distributed-application/))
+Backend based on [Dapr](https://dapr.io/) for [Unicorn App](https://unicorn.royerm.fr) (cf. [ADR 0017-distributed-application](https://hugo.royerm.fr/adr/0017-distributed-application/))
 ## Context
 The Unicorn project is designed to streamline the documentation and sharing of architecture artifacts created on a Kindle Scribe. Its primary objective is to enable users to export diagrams and Architecture Decision Records (ADRs) from Kindle Scribe, convert them into Markdown format, and host them on a secure, static website for easy access and collaboration.
 
