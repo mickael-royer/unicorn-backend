@@ -1,0 +1,122 @@
+name: Build and Deploy
+
+on: 
+  push:
+    branches: [main]
+      # Publish semver tags as releases.
+    tags: ["v*.*.*"]
+    paths-ignore:
+      - "README.md"
+      - ".vscode/**"
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io  
+  IMAGE_NAME: ${{ github.repository }}
+  AZURE_EVENTHUB_KEY: ${{ secrets.AZURE_EVENTHUB_KEY }}
+
+jobs:
+  set-env:
+      name: Set Environment Variables
+      runs-on: ubuntu-latest
+      outputs:
+        version: ${{ steps.main.outputs.version }}
+        created: ${{ steps.main.outputs.created }}
+        repository: ${{ steps.main.outputs.repository }}
+      steps:
+        - id: main
+          run: |
+            echo ::set-output name=version::$(echo ${GITHUB_SHA} | cut -c1-7)
+            echo ::set-output name=created::$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+            echo ::set-output name=repository::$GITHUB_REPOSITORY
+  package-services:
+    runs-on: ubuntu-latest
+    needs: set-env
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      containerImage-node: ${{ steps.image-tag.outputs.image-node-service }}
+      containerImage-python: ${{ steps.image-tag.outputs.image-python-service }}
+      containerImage-go: ${{ steps.image-tag.outputs.image-go-service }}
+    strategy:
+      matrix:
+        services:
+          [
+            { "appName": "node-service", "directory": "./node-service" },
+            { "appName": "python-service", "directory": "./python-service" },
+            { "appName": "go-service", "directory": "./go-service" },
+          ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      # Login against a Docker registry except on PR
+      # https://github.com/docker/login-action
+      - name: Log into registry ${{ env.REGISTRY }}
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN}}
+      # Extract metadata (tags, labels) for Docker
+      # https://github.com/docker/metadata-action
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: ${{ env.REGISTRY }}/${{ needs.set-env.outputs.repository }}/${{ matrix.services.appName }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=ref,event=branch
+            type=sha            
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.services.directory }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            AUTH0_CLIENT_ID=${{ secrets.AUTH0_CLIENT_ID }}
+            AUTH0_SECRET=${{ secrets.AUTH0_SECRET }}
+            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+            GOOGLE_DRIVE_FOLDER=${{ secrets.GOOGLE_DRIVE_FOLDER }}
+            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+            GITHUB_TOKEN=${{ secrets.AZURE_GITHUB_PAT }}
+      - name: Output image tag
+        id: image-tag
+        run: |
+          echo ::set-output name=image-${{ matrix.services.appName }}::${{ env.REGISTRY }}/$GITHUB_REPOSITORY/${{ matrix.services.appName }}:sha-${{ needs.set-env.outputs.version }} | tr '[:upper:]' '[:lower:]'
+  
+  deploy:
+    if: github.repository != 'Azure-samples/container-apps-store-api-microservice'
+    runs-on: ubuntu-latest
+    needs: [package-services]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy bicep
+        uses: azure/CLI@v1
+        with:
+          inlineScript: |
+            az group create -g ${{ secrets.RESOURCE_GROUP }} -l westeurope
+            az deployment group create -g ${{ secrets.RESOURCE_GROUP }} -f ./deploy/main.bicep \
+             -p \
+                nodeImage='${{ needs.package-services.outputs.containerImage-node }}' \
+                pythonImage='${{ needs.package-services.outputs.containerImage-python }}' \
+                goImage='${{ needs.package-services.outputs.containerImage-go }}' \
+                containerRegistry=${{ env.REGISTRY }} \
+                containerRegistryUsername=${{ github.actor }} \
+                containerRegistryPassword=${{ secrets.AZURE_GITHUB_PAT }}  \
+                pubsubAccesskey=${{ secrets.AZURE_EVENTHUB_KEY }}  \
+                statestoreMasterKey=${{ secrets.AZURE_COMSMOSDB_KEY }}                

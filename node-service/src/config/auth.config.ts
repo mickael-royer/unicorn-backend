@@ -1,0 +1,9 @@
+export const domain = process.env.AUTH0_DOMAIN;
+export const clientId = process.env.AUTH0_CLIENT_ID;
+export const secret = process.env.AUTH0_SECRET;
+export const googleClientId = process.env.GOOGLE_CLIENT_ID;
+export const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+export const googleRedirectURI = process.env.GOOGLE_REDIRECT_URI;
+export const googleDriveFolder = process.env.GOOGLE_DRIVE_FOLDER|| '';
+export const apiBaseURL = process.env.API_BASE_URL || 'https://api.royerm.fr';
+export const frontBaseURL = process.env.FRONT_BASE_URL || 'https://unicorn.royerm.fr';

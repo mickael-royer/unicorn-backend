@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+openai = "*"
+httpx = "*"
+flask = "*"
+flask-cors = "*"
+dapr = "*"
+dapr-ext-grpc = "*"
+dapr-ext-fastapi = "*"
+markdown = "*"
+google-generativeai = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.13"
+python_full_version = "3.13.0"

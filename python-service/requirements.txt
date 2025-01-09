@@ -1,0 +1,10 @@
+dapr
+dapr-ext-fastapi
+dapr-ext-grpc
+fastapi
+google-generativeai
+httpx
+markdown
+pusher
+python-dotenv
+uvicorn[standard]
