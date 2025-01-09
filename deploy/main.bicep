@@ -24,7 +24,7 @@ param registryPassword string = 'registry-password'
 param pubsubAccesskey string = ''
 
 @secure()
-param statestoreMasterkey string = ''
+param statestoreMasterKey string = ''
 
 var nodeServiceAppName = 'unicorn-bff'
 var pythonServiceAppName = 'unicorn-process'
@@ -163,7 +163,7 @@ resource stateDaprComponent 'Microsoft.App/managedEnvironments/daprComponents@20
     secrets: [
       {
         name: 'masterkey'
-        value: statestoreMasterkey
+        value: statestoreMasterKey
       }
     ]
     metadata: [
