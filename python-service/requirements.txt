@@ -4,6 +4,7 @@ dapr-ext-grpc
 fastapi
 google-generativeai
 httpx
+langchain
 markdown
 pusher
 python-dotenv

@@ -7,7 +7,7 @@ import json
 import asyncio
 import pusher
 
-from app.gemini import generate_text_with_gemini
+from app.llm import generate_text_with_gemini
 from app.dapr_utils import save_state_to_dapr, get_state_from_dapr
 from app.utils import decode_base64
 from app.notification import send_notification
@@ -132,3 +132,5 @@ async def call_go_service(file_id: str) -> dict:
     except Exception as e:
          logging.error(f"Error calling Go service: {e}")
          raise HTTPException(status_code=500, detail=f"Error calling Go service: {e}")
+    
+mount_chainlit(app=app, target="app/chainlit.py", path="/chainlit")
