@@ -47,6 +47,11 @@ def process_markdown_file(file_path):
                 "metadata": {"source": os.path.basename(file_path)},
             }
             container.create_item(body=item)
+            # Print the Vector dimension one time.
+            if 'vector_dimension' not in process_markdown_file.__dict__ :
+                print(f"Vector Dimension: {len(vector)}")
+                process_markdown_file.vector_dimension = True
+
         print(f"Processed: {file_path}")
     except Exception as e:
         print(f"Error processing {file_path}: {e}")

@@ -195,49 +195,6 @@ resource stateDaprComponent 'Microsoft.App/managedEnvironments/daprComponents@20
   }
 }
 
-// Dapr Component for CosmosDB Vector Store (c4)
-resource vectorDaprComponent 'Microsoft.App/managedEnvironments/daprComponents@2024-03-01' = {
-  name: '${environmentName}/c4store'
-  dependsOn: [
-    environment
-  ]
-  properties: {
-    componentType: 'state.azure.cosmosdb'
-    version: 'v1'
-    secrets: [
-      {
-        name: 'masterkey'
-        value: statestoreMasterKey // Use the same master key or a separate one
-      }
-    ]
-    metadata: [
-      {
-        name: 'url'
-        value: 'https://account-cosmodb-westeurope.documents.azure.com:443/' // Ensure this is correct
-      }
-      {
-        name: 'database'
-        value: 'filesDB'
-      }
-      {
-        name: 'collection'
-        value: 'c4'
-      }
-      {
-        name: 'masterkey'
-        secretRef: 'masterkey'
-      }
-      {
-        name: 'keyPrefix'
-        value: 'none'
-      }
-    ]
-    scopes: [
-      pythonServiceAppName // Adjust scopes as needed
-    ]
-  }
-}
-
 output nodeFqdn string = nodeService.outputs.fqdn
 output pythonFqdn string = pythonService.outputs.fqdn
 output goFqdn string = goService.outputs.fqdn

@@ -1,31 +1,32 @@
 import logging
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain.prompts import PromptTemplate
-from dapr.clients import DaprClient
+from azure.cosmos import CosmosClient
 import json
-from .config import GEMINI_API_KEY, MODEL_NAME, GEMINI_EMBEDDING_MODEL, DAPR_RAG_STORE #add GEMINI_EMBEDDING_MODEL to config
+from .config import GEMINI_API_KEY, MODEL_NAME, GEMINI_EMBEDDING_MODEL, COSMOS_ENDPOINT, COSMOS_KEY, DATABASE_NAME, CONTAINER_NAME
 
 # Configure logging (if not already done elsewhere)
 logging.basicConfig(level=logging.ERROR)  # Or your desired level
 
-dapr_client = DaprClient()
 embeddings = GoogleGenerativeAIEmbeddings(model=GEMINI_EMBEDDING_MODEL, google_api_key=GEMINI_API_KEY)
+cosmos_client = CosmosClient(url=COSMOS_ENDPOINT, credential=COSMOS_KEY)
+database = cosmos_client.get_database_client(DATABASE_NAME)
+container = database.get_container_client(CONTAINER_NAME)
+
 
 def generate_text_with_gemini(prompt: str) -> str:
     """Generates text using Langchain with Gemini and RAG."""
     try:
         # 1. Generate query embedding
         query_vector = embeddings.embed_query(prompt)
+
         # 2. Query Cosmos DB via Dapr
-        response = dapr_client.invoke_method(
-            app_id=DAPR_RAG_STORE, #replace with your cosmosdb dapr app id
-            method_name="queryItems",
-            data={
-                "query": "SELECT * FROM c ORDER BY ARRAY_DISTANCE(c.vector, @queryVector) ASC",
-                "parameters": [{"name": "@queryVector", "value": query_vector}],
-            },
-        )
-        cosmos_results = json.loads(response.data.decode("utf-8"))
+        results = container.query_items(
+                query="SELECT TOP 3 * FROM c ORDER BY VectorDistance(c.vector, @queryVector)",
+                parameters=[{"name": "@queryVector", "value": query_vector}],
+                enable_cross_partition_query=True
+            )
+        cosmos_results = list(results)
 
         # 3. Construct context-augmented prompt
         context = " ".join([item["content"] for item in cosmos_results[:3]]) #Get top 3 results.

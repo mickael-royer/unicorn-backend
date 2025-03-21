@@ -31,3 +31,8 @@ yarn-error.log*
 
 # Optional eslint cache
 .eslintcache
+
+# Local Dapr Component configuration
+dapr-components/c4store.yaml
+dapr-components/statestore.yaml
+dapr-components/queues.yaml
