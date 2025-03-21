@@ -132,5 +132,3 @@ async def call_go_service(file_id: str) -> dict:
     except Exception as e:
          logging.error(f"Error calling Go service: {e}")
          raise HTTPException(status_code=500, detail=f"Error calling Go service: {e}")
-    
-mount_chainlit(app=app, target="app/chainlit.py", path="/chainlit")
