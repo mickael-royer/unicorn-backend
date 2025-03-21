@@ -1,3 +1,4 @@
+azure.cosmos
 dapr
 dapr-ext-fastapi
 dapr-ext-grpc
@@ -5,6 +6,7 @@ fastapi
 google-generativeai
 httpx
 langchain
+langchain_google_genai
 markdown
 pusher
 python-dotenv

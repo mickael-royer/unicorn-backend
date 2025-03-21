@@ -1,8 +1,7 @@
 import logging
+from azure.cosmos import CosmosClient
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain.prompts import PromptTemplate
-from azure.cosmos import CosmosClient
-import json
 from .config import GEMINI_API_KEY, MODEL_NAME, GEMINI_EMBEDDING_MODEL, COSMOS_ENDPOINT, COSMOS_KEY, DATABASE_NAME, CONTAINER_NAME
 
 # Configure logging (if not already done elsewhere)
