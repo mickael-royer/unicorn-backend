@@ -3,11 +3,11 @@ BFF for Unicorn App
 ## Build and Run
 ### Build Docker image with Podman
 ```
-podman build --build-arg-file=.env -t unicorn-sub . 
+podman build --build-arg-file=.env -t unicorn-process . 
 ```
 ### Run image with Podman
 ```
-podman run -p 3001:3001 unicorn-sub
+podman run -p 3001:3001 unicorn-process
 ```
 ### Init dapr with Podman
 ```

@@ -6,7 +6,8 @@ fastapi
 google-generativeai
 httpx
 langchain
-langchain_google_genai
+langchain-google-genai
+langchain-text-splitters
 markdown
 pusher
 python-dotenv
