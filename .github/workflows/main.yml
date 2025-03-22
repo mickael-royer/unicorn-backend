@@ -86,7 +86,8 @@ jobs:
             GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
             GOOGLE_DRIVE_FOLDER=${{ secrets.GOOGLE_DRIVE_FOLDER }}
             GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-            GITHUB_TOKEN=${{ secrets.AZURE_GITHUB_PAT }}
+            COSMOS_KEY=${{ secrets.COSMOS_KEY }}
+            GITHUB_TOKEN=${{ secrets.AZURE_GITHUB_PAT }}            
       - name: Output image tag
         id: image-tag
         run: |

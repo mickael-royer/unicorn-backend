@@ -8,8 +8,7 @@ from .config import GEMINI_API_KEY, MODEL_NAME, GEMINI_EMBEDDING_MODEL, COSMOS_E
 logging.basicConfig(level=logging.ERROR)  # Or your desired level
 
 embeddings = GoogleGenerativeAIEmbeddings(model=GEMINI_EMBEDDING_MODEL, google_api_key=GEMINI_API_KEY)
-print(f"Cosmos DB Endpoint: {COSMOS_ENDPOINT}")
-cosmos_client = CosmosClient(url="https://account-cosmodb-westeurope.documents.azure.com:443/", credential=COSMOS_KEY)
+cosmos_client = CosmosClient(url=COSMOS_ENDPOINT, credential=COSMOS_KEY)
 database = cosmos_client.get_database_client(DATABASE_NAME)
 container = database.get_container_client(CONTAINER_NAME)
 
