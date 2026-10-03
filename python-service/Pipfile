@@ -5,14 +5,23 @@ name = "pypi"
 
 [packages]
 openai = "*"
-httpx = "*"
 flask = "*"
 flask-cors = "*"
+"azure.cosmos" = "*"
 dapr = "*"
-dapr-ext-grpc = "*"
 dapr-ext-fastapi = "*"
-markdown = "*"
+dapr-ext-grpc = "*"
+fastapi = "*"
 google-generativeai = "*"
+httpx = "*"
+markdown = "*"
+uvicorn = {extras = ["standard"], version = "*"}
+pusher = "*"
+langchain = "*"
+langchain-google-genai = "*"
+langchain-text-splitters = "*"
+azure-cosmos = "*"
+python-dotenv = "*"
 
 [dev-packages]
 
