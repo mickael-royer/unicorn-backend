@@ -3,7 +3,6 @@ import uuid
 from azure.cosmos import CosmosClient
 from langchain.text_splitter import MarkdownTextSplitter
 from langchain_google_genai import GoogleGenerativeAIEmbeddings #or AzureOpenAIEmbeddings
-import google.generativeai as genai #for Gemini
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -24,7 +23,6 @@ database = cosmos_client.get_database_client(database_name)
 container = database.get_container_client(container_name)
 
 # Embedding model setup
-genai.configure(api_key=gemini_api_key) #or openAI config
 embeddings = GoogleGenerativeAIEmbeddings(model=gemini_embedding_model, google_api_key=gemini_api_key) #or AzureOpenAIEmbeddings
 
 # Text splitter setup
