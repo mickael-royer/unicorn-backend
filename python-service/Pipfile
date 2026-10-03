@@ -24,6 +24,7 @@ azure-cosmos = "*"
 python-dotenv = "*"
 
 [dev-packages]
+pip-audit = "*"
 
 [requires]
 python_version = "3.13"
