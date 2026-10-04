@@ -24,7 +24,7 @@ LLM + RAG with LangChain on a Cosmos DB vector store holding C4 info (ADR 0025-0
 ## Rules
 - Dapr component names must match between `dapr-components/` and Azure; only types/metadata differ.
 - Keep pub/sub topics and payload shapes backward compatible; change them together across services.
-- Follow-up: RAG ingestion of C4 info should read the IcePanel export once IcePanel replaces Archi.
+- RAG ingestion (`python-service/app/kb.py`) reads the C4 model from the IcePanel API. `python-service/c4/` is the legacy Archi export and is no longer ingested.
 
 ## Gotchas learned in operation
 
