@@ -37,8 +37,14 @@ def generate_text_with_gemini(prompt: str) -> str:
         final_prompt = prompt_template.format(prompt=augmented_prompt)
         response = llm.invoke(final_prompt)
 
-        if response and response.content:  # Check if response and content are not empty
-            return response.content
+        if response and response.content:
+            content = response.content
+            if isinstance(content, list):
+                content = "".join(
+                    block["text"] for block in content
+                    if isinstance(block, dict) and block.get("type") == "text"
+                )
+            return content
         else:
             logging.error("Gemini Response was empty.")
             return "Gemini Response was empty."  # More informative than just "failed"
