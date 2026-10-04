@@ -25,3 +25,22 @@ LLM + RAG with LangChain on a Cosmos DB vector store holding C4 info (ADR 0025-0
 - Dapr component names must match between `dapr-components/` and Azure; only types/metadata differ.
 - Keep pub/sub topics and payload shapes backward compatible; change them together across services.
 - Follow-up: RAG ingestion of C4 info should read the IcePanel export once IcePanel replaces Archi.
+
+## Gotchas learned in operation
+
+**go-service / godotenv**: `godotenv.Load()` reads `.env` from cwd. `dapr.yaml` `appDirPath`
+sets the correct cwd for multi-app run. If starting the service manually, invoke from `repos/unicorn-backend/go-service/`.
+
+**Go Dockerfile base image**: Keep `FROM golang:X.Y-alpine` in sync with the `go X.Y.Z`
+directive in `go.mod`. Go 1.16 cannot parse the three-part version format used since Go 1.21;
+a mismatch silently breaks CI with an obscure `invalid go version` error.
+
+**Gemini model names (as of 2026-10)**: chat → `gemini-3.8-flash`, embeddings → `models/gemini-embedding-001`.
+`gemini-2.0-flash` and `models/embedding-001` are deprecated.
+
+**langchain-google-genai >= 2.0 response format**: `response.content` is a list of typed
+blocks `[{"type": "text", "text": "...", ...}]`, not a plain string. Extract with:
+```python
+if isinstance(content, list):
+    content = "".join(b["text"] for b in content if isinstance(b, dict) and b.get("type") == "text")
+```
