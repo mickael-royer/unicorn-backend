@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM golang:1.16-alpine
+FROM golang:1.26-alpine
 
 ARG PORT=8050
 ENV PORT=$PORT
