@@ -36,3 +36,11 @@ yarn-error.log*
 dapr-components/c4store.yaml
 dapr-components/statestore.yaml
 dapr-components/queues.yaml
+
+# Dapr runtime logs
+**/.dapr/
+
+# Accidental npm artifacts in non-node services
+go-service/package.json
+go-service/package-lock.json
+go-service/node_modules/
