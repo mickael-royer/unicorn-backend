@@ -5,8 +5,8 @@ load_dotenv()
 
 # Gemini LLM Configuration
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-MODEL_NAME = "gemini-2.0-flash"  # Or "gemini-pro-vision"
-GEMINI_EMBEDDING_MODEL = "models/embedding-001"
+MODEL_NAME = "gemini-3.8-flash"
+GEMINI_EMBEDDING_MODEL = "models/gemini-embedding-001"
 
 # Cosmos DB Configuration
 COSMOS_ENDPOINT = "https://account-cosmodb-westeurope.documents.azure.com:443/"
