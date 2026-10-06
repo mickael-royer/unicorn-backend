@@ -4,6 +4,7 @@ from azure.cosmos import CosmosClient
 from langchain_text_splitters import MarkdownTextSplitter
 from langchain_google_genai import GoogleGenerativeAIEmbeddings #or AzureOpenAIEmbeddings
 from dotenv import load_dotenv
+from .config import GEMINI_EMBEDDING_MODEL
 
 # Load environment variables from .env file
 load_dotenv()
@@ -14,7 +15,6 @@ cosmos_key = os.getenv("COSMOS_KEY")
 database_name = os.getenv("DATABASE_NAME")
 container_name = os.getenv("CONTAINER_NAME")
 gemini_api_key = os.getenv("GEMINI_API_KEY")
-gemini_embedding_model = os.getenv("GEMINI_EMBEDDING_MODEL")
 icepanel_api_key = os.getenv("ICEPANEL_API_KEY")
 icepanel_landscape_id = os.getenv("ICEPANEL_LANDSCAPE_ID")
 icepanel_version_id = os.getenv("ICEPANEL_VERSION_ID", "latest")
@@ -116,7 +116,7 @@ def ingest_icepanel_model():
 
     cosmos_client = CosmosClient(url=cosmos_endpoint, credential=cosmos_key)
     container = cosmos_client.get_database_client(database_name).get_container_client(container_name)
-    embeddings = GoogleGenerativeAIEmbeddings(model=gemini_embedding_model, google_api_key=gemini_api_key) #or AzureOpenAIEmbeddings
+    embeddings = GoogleGenerativeAIEmbeddings(model=GEMINI_EMBEDDING_MODEL, google_api_key=gemini_api_key) #or AzureOpenAIEmbeddings
 
     for source, markdown_content in build_documents(objects, connections):
         try:
