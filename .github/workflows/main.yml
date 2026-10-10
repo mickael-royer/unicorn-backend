@@ -144,14 +144,21 @@ jobs:
           set -euo pipefail
           api=https://api.hosting.ionos.com/dns/v1
           auth=(-H "X-API-Key: $IONOS_API_KEY" -H "Content-Type: application/json")
-          zone_id=$(curl -fsS "${auth[@]}" "$api/zones" | jq -r --arg z "$ZONE" '.[] | select(.name==$z) | .id')
-          record_id=$(curl -fsS "${auth[@]}" "$api/zones/$zone_id?recordName=$API_HOSTNAME&recordType=CNAME" \
+          # Print the IONOS error body on failure instead of hiding it behind curl -f.
+          ionos() {
+            local out
+            out=$(curl -sS --fail-with-body "${auth[@]}" "$@") || { echo "IONOS API error ($*): $out" >&2; return 1; }
+            printf '%s' "$out"
+          }
+          zone_id=$(ionos "$api/zones" | jq -r --arg z "$ZONE" '.[] | select(.name==$z) | .id')
+          [ -n "$zone_id" ] || { echo "Zone $ZONE not found for this API key"; exit 1; }
+          record_id=$(ionos "$api/zones/$zone_id?recordName=$API_HOSTNAME&recordType=CNAME" \
             | jq -r '.records[0].id // empty')
           if [ -n "$record_id" ]; then
-            curl -fsS -X PUT "${auth[@]}" "$api/zones/$zone_id/records/$record_id" \
+            ionos -X PUT "$api/zones/$zone_id/records/$record_id" \
               -d "{\"content\":\"$TARGET\",\"ttl\":300,\"prio\":0,\"disabled\":false}" > /dev/null
           else
-            curl -fsS -X POST "${auth[@]}" "$api/zones/$zone_id/records" \
+            ionos -X POST "$api/zones/$zone_id/records" \
               -d "[{\"name\":\"$API_HOSTNAME\",\"type\":\"CNAME\",\"content\":\"$TARGET\",\"ttl\":300}]" > /dev/null
           fi
           echo "$API_HOSTNAME -> $TARGET"
