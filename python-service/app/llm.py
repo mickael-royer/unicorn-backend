@@ -13,8 +13,12 @@ database = cosmos_client.get_database_client(DATABASE_NAME)
 container = database.get_container_client(CONTAINER_NAME)
 
 
+class SynthesisError(Exception):
+    """Gemini produced no usable synthesis; the file must not be published."""
+
+
 def generate_text_with_gemini(prompt: str) -> str:
-    """Generates text using Langchain with Gemini and RAG."""
+    """Generates text using Langchain with Gemini and RAG. Raises SynthesisError on failure."""
     try:
         # 1. Generate query embedding
         query_vector = embeddings.embed_query(prompt)
@@ -36,19 +40,17 @@ def generate_text_with_gemini(prompt: str) -> str:
         prompt_template = PromptTemplate(input_variables=["prompt"], template="{prompt}")
         final_prompt = prompt_template.format(prompt=augmented_prompt)
         response = llm.invoke(final_prompt)
-
-        if response and response.content:
-            content = response.content
-            if isinstance(content, list):
-                content = "".join(
-                    block["text"] for block in content
-                    if isinstance(block, dict) and block.get("type") == "text"
-                )
-            return content
-        else:
-            logging.error("Gemini Response was empty.")
-            return "Gemini Response was empty."  # More informative than just "failed"
-
     except Exception as e:
         logging.error(f"Gemini API call error: {e}")
-        return f"Error generating text: {e}"
+        raise SynthesisError(f"Gemini API call error: {e}") from e
+
+    content = response.content if response else None
+    if isinstance(content, list):
+        content = "".join(
+            block["text"] for block in content
+            if isinstance(block, dict) and block.get("type") == "text"
+        )
+    if not content:
+        logging.error("Gemini Response was empty.")
+        raise SynthesisError("Gemini response was empty")
+    return content

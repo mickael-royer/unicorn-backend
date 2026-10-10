@@ -7,7 +7,7 @@ import json
 import asyncio
 import pusher
 
-from app.llm import generate_text_with_gemini
+from app.llm import SynthesisError, generate_text_with_gemini
 from app.dapr_utils import save_state_to_dapr, get_state_from_dapr
 from app.utils import decode_base64
 from app.notification import send_notification
@@ -82,7 +82,14 @@ async def handle_file_message(request: Request):
   **ADR Content:**
   {decoded_content_str}
   """
-        synthesis = generate_text_with_gemini(prompt)
+        try:
+            synthesis = generate_text_with_gemini(prompt)
+        except SynthesisError as e:
+            # Never publish a post without a synthesis. DROP: retrying would hit the same
+            # error (e.g. Gemini quota), and the user can upload the file again.
+            logging.error(f"Synthesis failed for {file_id}, file not published: {e}")
+            notify_not_published(file_name)
+            return {"status": "DROP"}
         logging.info(f"Generated synthesis: {synthesis}")
 
         # Save the file to Cosmos DB via Dapr.
@@ -110,6 +117,17 @@ async def handle_file_message(request: Request):
     except Exception as e:
         logging.error(f"Error processing message: {e}")
         raise HTTPException(status_code=500, detail="Error processing message")
+
+def notify_not_published(file_name: str) -> None:
+    """Tells the frontend the file was not published; a notification failure must not trigger a retry."""
+    try:
+        send_notification(
+            channel='unicorn-notification',
+            event='publish',
+            data={'message': f'{file_name} not published: synthesis failed, please retry later'}
+        )
+    except Exception as e:
+        logging.error(f"Failed to notify synthesis failure: {e}")
 
 async def call_go_service(file_id: str) -> dict:
     """Calls the Go service to push the file to Github and returns the result."""
