@@ -14,6 +14,7 @@ env:
   REGISTRY: ghcr.io  
   IMAGE_NAME: ${{ github.repository }}
   AZURE_EVENTHUB_KEY: ${{ secrets.AZURE_EVENTHUB_KEY }}
+  API_HOSTNAME: api.royerm.fr
 
 jobs:
   set-env:
@@ -121,4 +122,61 @@ jobs:
                 containerRegistryUsername=${{ github.actor }} \
                 containerRegistryPassword=${{ secrets.AZURE_GITHUB_PAT }}  \
                 pubsubAccesskey=${{ secrets.AZURE_EVENTHUB_KEY }}  \
-                statestoreMasterKey=${{ secrets.AZURE_COMSMOSDB_KEY }}                
+                statestoreMasterKey=${{ secrets.AZURE_COMSMOSDB_KEY }}
+
+      # The frontend calls https://api.royerm.fr (DNS hosted at IONOS). Point it at the
+      # current unicorn-bff FQDN and (re)bind the custom domain, since the bicep deploy
+      # does not declare it and the environment's default domain can change.
+      - name: Get unicorn-bff FQDN
+        id: fqdn
+        run: |
+          fqdn=$(az deployment group show -g ${{ secrets.RESOURCE_GROUP }} -n main \
+            --query properties.outputs.nodeFqdn.value -o tsv)
+          echo "Backend FQDN: $fqdn"
+          echo "value=$fqdn" >> "$GITHUB_OUTPUT"
+
+      - name: Update api.royerm.fr CNAME at IONOS
+        env:
+          IONOS_API_KEY: ${{ secrets.IONOS_API_KEY }}
+          ZONE: royerm.fr
+          TARGET: ${{ steps.fqdn.outputs.value }}
+        run: |
+          set -euo pipefail
+          api=https://api.hosting.ionos.com/dns/v1
+          auth=(-H "X-API-Key: $IONOS_API_KEY" -H "Content-Type: application/json")
+          zone_id=$(curl -fsS "${auth[@]}" "$api/zones" | jq -r --arg z "$ZONE" '.[] | select(.name==$z) | .id')
+          record_id=$(curl -fsS "${auth[@]}" "$api/zones/$zone_id?recordName=$API_HOSTNAME&recordType=CNAME" \
+            | jq -r '.records[0].id // empty')
+          if [ -n "$record_id" ]; then
+            curl -fsS -X PUT "${auth[@]}" "$api/zones/$zone_id/records/$record_id" \
+              -d "{\"content\":\"$TARGET\",\"ttl\":300,\"prio\":0,\"disabled\":false}" > /dev/null
+          else
+            curl -fsS -X POST "${auth[@]}" "$api/zones/$zone_id/records" \
+              -d "[{\"name\":\"$API_HOSTNAME\",\"type\":\"CNAME\",\"content\":\"$TARGET\",\"ttl\":300}]" > /dev/null
+          fi
+          echo "$API_HOSTNAME -> $TARGET"
+
+      - name: Wait for DNS propagation
+        run: |
+          for i in $(seq 1 40); do
+            current=$(dig +short "$API_HOSTNAME" CNAME @8.8.8.8 | sed 's/\.$//')
+            [ "$current" = "${{ steps.fqdn.outputs.value }}" ] && echo "DNS ok" && exit 0
+            echo "Waiting for DNS ($current)..."; sleep 15
+          done
+          echo "DNS did not propagate in time"; exit 1
+
+      - name: Bind custom domain with managed certificate
+        run: |
+          set -euo pipefail
+          az extension add --name containerapp --upgrade -y --only-show-errors
+          rg=${{ secrets.RESOURCE_GROUP }}
+          az containerapp hostname add -g "$rg" -n unicorn-bff --hostname "$API_HOSTNAME" --only-show-errors || true
+          cert=$(az containerapp env certificate list -g "$rg" -n env-unicorn-dev --managed-certificates-only \
+            --query "[?properties.subjectName=='$API_HOSTNAME'].id | [0]" -o tsv)
+          if [ -n "$cert" ]; then
+            az containerapp hostname bind -g "$rg" -n unicorn-bff --hostname "$API_HOSTNAME" \
+              --environment env-unicorn-dev --certificate "$cert"
+          else
+            az containerapp hostname bind -g "$rg" -n unicorn-bff --hostname "$API_HOSTNAME" \
+              --environment env-unicorn-dev --validation-method CNAME
+          fi
