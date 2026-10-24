@@ -83,7 +83,8 @@ async def handle_file_message(request: Request):
   {decoded_content_str}
   """
         try:
-            synthesis = generate_text_with_gemini(prompt)
+            # Blocking I/O: run it off the event loop so the app keeps serving requests
+            synthesis = await asyncio.to_thread(generate_text_with_gemini, prompt)
         except SynthesisError as e:
             # Never publish a post without a synthesis. DROP: retrying would hit the same
             # error (e.g. Gemini quota), and the user can upload the file again.
@@ -97,7 +98,7 @@ async def handle_file_message(request: Request):
             'content': decoded_content_str,  # original content
             'synthesis': synthesis
         }
-        save_state_to_dapr(file_id, file_data)
+        await asyncio.to_thread(save_state_to_dapr, file_id, file_data)
 
         # Add a delay here
         await asyncio.sleep(2)  # Wait for 2 seconds

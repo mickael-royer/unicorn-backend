@@ -7,7 +7,11 @@ from .config import GEMINI_API_KEY, MODEL_NAME, GEMINI_EMBEDDING_MODEL, COSMOS_E
 # Configure logging (if not already done elsewhere)
 logging.basicConfig(level=logging.ERROR)  # Or your desired level
 
-embeddings = GoogleGenerativeAIEmbeddings(model=GEMINI_EMBEDDING_MODEL, google_api_key=GEMINI_API_KEY)
+# Without a timeout a stalled Gemini request hangs the subscriber forever (no SynthesisError, no DROP)
+GEMINI_TIMEOUT_S = 60
+
+embeddings = GoogleGenerativeAIEmbeddings(model=GEMINI_EMBEDDING_MODEL, google_api_key=GEMINI_API_KEY,
+                                          request_options={"timeout": GEMINI_TIMEOUT_S})
 cosmos_client = CosmosClient(url=COSMOS_ENDPOINT, credential=COSMOS_KEY)
 database = cosmos_client.get_database_client(DATABASE_NAME)
 container = database.get_container_client(CONTAINER_NAME)
@@ -36,7 +40,8 @@ def generate_text_with_gemini(prompt: str) -> str:
         augmented_prompt = f"Context: {context}\nQuestion: {prompt}\nAnswer:"
 
         # 4. Invoke Gemini LLM
-        llm = ChatGoogleGenerativeAI(model=MODEL_NAME, google_api_key=GEMINI_API_KEY)
+        llm = ChatGoogleGenerativeAI(model=MODEL_NAME, google_api_key=GEMINI_API_KEY,
+                                     timeout=GEMINI_TIMEOUT_S, max_retries=2)
         prompt_template = PromptTemplate(input_variables=["prompt"], template="{prompt}")
         final_prompt = prompt_template.format(prompt=augmented_prompt)
         response = llm.invoke(final_prompt)
