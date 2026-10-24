@@ -1,5 +1,5 @@
 # Use an official Node.js runtime as a parent image
-FROM node:18
+FROM node:24.22.1
 
 ARG AUTH0_DOMAIN=royerm.eu.auth0.com
 ENV AUTH0_DOMAIN=$AUTH0_DOMAIN
